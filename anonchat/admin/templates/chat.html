@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, state_badge %}
+{% block title %}{% if kind == 'dialog' %}Диалог #{{ dialog.id }}{% else %}{{ room.title }}{% endif %}{% endblock %}
+{% block content %}
+{% if kind == 'dialog' %}
+<h1>💬 Диалог #{{ dialog.id }}
+  {% if dialog.is_active %}<span class="badge b-ok"><span class="live-dot"></span>&nbsp;идёт сейчас</span>{% else %}<span class="badge">завершён</span>{% endif %}
+</h1>
+{% else %}
+<h1>{{ room.emoji }} {{ room.title }}
+  {% if room.is_active %}<span class="badge b-ok">активна</span>{% else %}<span class="badge b-bad">закрыта</span>{% endif %}
+  {% if room.vip_only %}<span class="badge b-vip">👑 VIP</span>{% endif %}
+  {% if not room.is_public %}<span class="badge">🔒 по ссылке</span>{% endif %}
+</h1>
+{% endif %}
+
+<div class="chat-layout">
+  <div class="chat" id="chat" data-poll="{{ poll_url }}">
+    {% if messages %}
+      {% with full = True %}{% include "_messages.html" %}{% endwith %}
+    {% else %}
+      <div class="empty">Сообщений пока нет</div>
+    {% endif %}
+  </div>
+
+  <div>
+    {% if kind == 'dialog' %}
+    <div class="card">
+      <h2>Участники</h2>
+      <p>⬅️ {{ user_chip(dialog.user1) }}</p>
+      <p class="small muted" style="margin-top:-8px">{{ gender_label(dialog.user1.gender) }}{% if dialog.user1.age %}, {{ dialog.user1.age }}{% endif %} · {{ rating_text(dialog.user1) }}</p>
+      <p>➡️ {{ user_chip(dialog.user2) }}</p>
+      <p class="small muted" style="margin-top:-8px">{{ gender_label(dialog.user2.gender) }}{% if dialog.user2.age %}, {{ dialog.user2.age }}{% endif %} · {{ rating_text(dialog.user2) }}</p>
+    </div>
+    <div class="card mt">
+      <div class="kv">
+        <div>Начат</div><div>{{ fmt_dt(dialog.started_at) }}</div>
+        <div>Завершён</div><div>{{ fmt_dt(dialog.ended_at) }}</div>
+        <div>Кто завершил</div><div>{% if dialog.ended_by %}<a href="/users/{{ dialog.ended_by }}">{{ dialog.ended_by }}</a>{% else %}—{% endif %}</div>
+        <div>Сообщений</div><div>{{ dialog.messages_count }}</div>
+      </div>
+      {% if dialog.is_active %}
+      <form method="post" action="/dialogs/{{ dialog.id }}/end" class="mt" data-confirm="Принудительно завершить диалог?">
+        <button class="btn danger sm">⛔ Завершить диалог</button>
+      </form>
+      {% endif %}
+    </div>
+    {% if reports %}
+    <div class="card mt">
+      <h2>🚩 Жалобы</h2>
+      {% for r in reports %}<p class="small">{{ user_chip(r.reporter) }} → {{ r.reason }} <span class="badge">{{ r.status.value }}</span></p>{% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="card">
+      <div class="kv">
+        <div>Онлайн</div><div><b>{{ members|length }}</b> / {{ room.max_members }}</div>
+        <div>Сообщений</div><div>{{ room.messages_count }}</div>
+        <div>Владелец</div><div>{% if owner %}{{ user_chip(owner) }}{% else %}система{% endif %}</div>
+        <div>Создана</div><div>{{ fmt_dt(room.created_at) }}</div>
+        <div>Ссылка</div><div class="small"><code>t.me/{{ bot_username }}?start=room_{{ room.invite_code }}</code></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h2>Сейчас в комнате</h2>
+      {% for m, u in members %}
+        <p class="small" style="margin:6px 0"><b style="color: {{ u.id|nick_color }}">{{ m.nickname }}</b><br>{{ user_chip(u) }}</p>
+      {% else %}<p class="muted">Никого</p>{% endfor %}
+    </div>
+    <div class="card mt">
+      <h2>Настройки</h2>
+      <form method="post" action="/rooms/{{ room.id }}/update" class="grid" style="gap:8px">
+        <div class="row"><input name="emoji" value="{{ room.emoji }}" style="width:60px"><input name="title" value="{{ room.title }}" style="flex:1" required></div>
+        <input name="description" value="{{ room.description or '' }}" placeholder="Описание">
+        <div class="row"><label class="small muted">Мест</label><input name="max_members" type="number" value="{{ room.max_members }}" style="width:90px">
+          <label class="small muted">Порядок</label><input name="sort_order" type="number" value="{{ room.sort_order }}" style="width:80px"></div>
+        <label class="check"><input type="checkbox" name="vip_only" value="true" {{ 'checked' if room.vip_only }}> Только VIP</label>
+        <label class="check"><input type="checkbox" name="is_public" value="true" {{ 'checked' if room.is_public }}> Публичная</label>
+        <button class="btn primary sm">Сохранить</button>
+      </form>
+      {% if room.is_active %}
+      <form method="post" action="/rooms/{{ room.id }}/close" class="mt" data-confirm="Закрыть комнату и выгнать всех участников?"><button class="btn danger sm">🗑 Закрыть комнату</button></form>
+      {% else %}
+      <form method="post" action="/rooms/{{ room.id }}/reopen" class="mt"><button class="btn sm">♻️ Открыть снова</button></form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

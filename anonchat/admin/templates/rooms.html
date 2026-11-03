@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Комнаты{% endblock %}
+{% block content %}
+<h1>👥 Комнаты <span class="badge">{{ rows|length }}</span></h1>
+<div class="card table-wrap">
+  <table>
+    <tr><th>#</th><th>Комната</th><th>Онлайн</th><th>Сообщений</th><th>Тип</th><th>Владелец</th><th>Статус</th><th></th></tr>
+    {% for r, n in rows %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td class="wrap"><b>{{ r.emoji }} {{ r.title }}</b><br><span class="small muted">{{ r.description or '' }}</span></td>
+      <td>{% if n %}<span class="badge b-ok">{{ n }}</span>{% else %}0{% endif %} / {{ r.max_members }}</td>
+      <td>{{ r.messages_count }}</td>
+      <td>{% if r.vip_only %}<span class="badge b-vip">👑 VIP</span> {% endif %}{% if r.is_public %}<span class="badge">🌍 публичная</span>{% else %}<span class="badge">🔒 по ссылке</span>{% endif %}</td>
+      <td>{% if r.owner_id %}<a href="/users/{{ r.owner_id }}">{{ r.owner_id }}</a>{% else %}<span class="muted">система</span>{% endif %}</td>
+      <td>{% if r.is_active %}<span class="badge b-ok">активна</span>{% else %}<span class="badge b-bad">закрыта</span>{% endif %}</td>
+      <td><a class="btn sm" href="/rooms/{{ r.id }}">Открыть чат</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="card mt" style="max-width:640px">
+  <h2>➕ Новая системная комната</h2>
+  <form method="post" action="/rooms/new" class="grid" style="gap:8px">
+    <div class="row"><input name="emoji" value="💬" style="width:60px"><input name="title" placeholder="Название" style="flex:1" required></div>
+    <input name="description" placeholder="Описание">
+    <div class="row">
+      <label class="small muted">Мест</label><input type="number" name="max_members" value="100" style="width:90px">
+      <label class="check"><input type="checkbox" name="vip_only" value="true"> Только VIP</label>
+      <label class="check"><input type="checkbox" name="is_public" value="true" checked> Публичная</label>
+    </div>
+    <div><button class="btn primary">Создать</button></div>
+  </form>
+</div>
+{% endblock %}

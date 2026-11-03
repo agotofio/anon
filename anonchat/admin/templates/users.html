@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, pager, state_badge %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<h1>🧑 Пользователи <span class="badge">{{ total }}</span></h1>
+<div class="row" style="margin-bottom:14px">
+  <div class="tabs" style="margin:0">
+    {% for k, label in [('all','Все'),('online','🟢 Онлайн'),('vip','👑 VIP'),('paying','⭐ Платившие'),('reported','🚩 С жалобами'),('banned','🚫 Бан')] %}
+    <a href="/users?filter={{ k }}&q={{ q }}" class="{{ 'on' if filter == k }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="spacer"></div>
+  <form class="inline" method="get">
+    <input type="hidden" name="filter" value="{{ filter }}">
+    <input name="q" value="{{ q }}" placeholder="ID, @username или имя">
+    <button class="btn">Найти</button>
+  </form>
+</div>
+<div class="card table-wrap">
+  <table>
+    <tr><th>Пользователь</th><th>ID</th><th>Пол / возраст</th><th>Статус</th><th>Рейтинг</th><th>Диалогов</th><th>Сообщ.</th><th>⭐</th><th>Активность</th></tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ user_chip(u) }}</td>
+      <td><code>{{ u.id }}</code></td>
+      <td>{{ gender_label(u.gender, True) }} {{ u.age or '' }}</td>
+      <td>{{ state_badge(u) }}</td>
+      <td class="muted">{{ u.rating or '—' }}</td>
+      <td>{{ u.dialogs_count }}</td>
+      <td>{{ u.messages_count }}</td>
+      <td>{{ u.stars_spent or '' }}</td>
+      <td class="muted">{{ fmt_dt(u.last_active) }}</td>
+    </tr>
+    {% else %}<tr><td colspan="9" class="empty">Никого не найдено</td></tr>{% endfor %}
+  </table>
+</div>
+{{ pager(page, last, '/users?filter=' ~ filter ~ '&q=' ~ q ~ '&') }}
+{% endblock %}

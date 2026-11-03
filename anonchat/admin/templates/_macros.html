@@ -1,0 +1,62 @@
+{% macro user_chip(u, link=True) -%}
+{%- if u -%}
+<span class="uchip">
+  <span class="avatar" style="background: {{ u.id|nick_color }}">{{ (u.first_name or u.username or '?')[:1]|upper }}</span>
+  {%- if link %}<a href="/users/{{ u.id }}">{% endif -%}
+  {{ u.display_name }}
+  {%- if link %}</a>{% endif %}
+  {% if u.is_vip %}<span class="badge b-vip">👑 VIP</span>{% endif %}
+  {% if u.is_banned %}<span class="badge b-bad">BAN</span>{% endif %}
+</span>
+{%- else -%}<span class="muted">—</span>{%- endif -%}
+{%- endmacro %}
+
+{% macro media(m, thumb=False) -%}
+{%- set src = '/file/' ~ m.id -%}
+{%- if m.content_type == 'photo' -%}
+  <img src="{{ src }}" loading="lazy" data-zoom alt="photo">
+{%- elif m.content_type in ('video', 'animation') -%}
+  <video src="{{ src }}" {% if m.content_type == 'animation' %}autoplay loop muted playsinline{% else %}controls preload="metadata"{% endif %}></video>
+{%- elif m.content_type == 'video_note' -%}
+  <video class="circle" src="{{ src }}" controls preload="metadata"></video>
+{%- elif m.content_type in ('voice', 'audio') -%}
+  <audio src="{{ src }}" controls preload="none"></audio>
+  {%- if m.file_name and not thumb %}<div class="small muted">🎵 {{ m.file_name }}</div>{% endif -%}
+{%- elif m.content_type == 'sticker' -%}
+  {%- if m.mime_type == 'video/webm' -%}
+    <video class="sticker" src="{{ src }}" autoplay loop muted playsinline></video>
+  {%- elif m.mime_type == 'application/x-tgsticker' -%}
+    <a class="filebox" href="{{ src }}?download=1">✨ Анимированный стикер {{ m.text or '' }} (.tgs)</a>
+  {%- else -%}
+    <img class="sticker" src="{{ src }}" loading="lazy" alt="sticker">
+  {%- endif -%}
+{%- elif m.content_type == 'document' -%}
+  {%- if m.mime_type and m.mime_type.startswith('image/') -%}
+    <img src="{{ src }}" loading="lazy" data-zoom alt="">
+  {%- else -%}
+  <a class="filebox" href="{{ src }}?download=1">📄 <span>{{ m.file_name or 'Файл' }}<br><span class="small muted">{{ m.mime_type or '' }}</span></span></a>
+  {%- endif -%}
+{%- endif -%}
+{%- endmacro %}
+
+{% macro type_icon(t) -%}
+{{ {'text':'💬','photo':'🖼','video':'🎬','animation':'🎞','video_note':'⭕','voice':'🎤','audio':'🎵','sticker':'🌟','document':'📄','location':'📍','contact':'👤','dice':'🎲','poll':'📊'}.get(t, '•') }}
+{%- endmacro %}
+
+{% macro pager(page, last, base) -%}
+{% if last > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn sm" href="{{ base }}page={{ page - 1 }}">◀</a>{% endif %}
+  <span class="muted">Стр. {{ page }} из {{ last }}</span>
+  {% if page < last %}<a class="btn sm" href="{{ base }}page={{ page + 1 }}">▶</a>{% endif %}
+</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro state_badge(u) -%}
+{%- set s = u.state.value -%}
+{%- if s == 'chatting' %}<span class="badge b-ok">💬 в диалоге</span>
+{%- elif s == 'searching' %}<span class="badge b-warn">🔎 ищет</span>
+{%- elif s == 'in_room' %}<span class="badge b-acc">👥 в комнате</span>
+{%- else %}<span class="badge">не в чате</span>{% endif -%}
+{%- endmacro %}

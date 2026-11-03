@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip %}
+{% block title %}Онлайн{% endblock %}
+{% block content %}
+<h1 data-refresh="10"><span class="live-dot"></span> Сейчас онлайн <span class="small muted">обновляется каждые 10 с</span></h1>
+<div class="grid g3">
+  <div class="card stat"><div class="label">Активные диалоги</div><div class="value">{{ dialogs|length }}</div></div>
+  <div class="card stat"><div class="label">В поиске</div><div class="value">{{ searching|length }}</div></div>
+  <div class="card stat"><div class="label">Живые комнаты</div><div class="value">{{ room_rows|length }}</div></div>
+</div>
+
+<div class="card mt">
+  <h2>💬 Идущие диалоги</h2>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Собеседник 1</th><th>Собеседник 2</th><th>Начат</th><th>Сообщений</th><th></th></tr>
+    {% for d in dialogs %}
+    <tr>
+      <td>{{ d.id }}</td><td>{{ user_chip(d.user1) }}</td><td>{{ user_chip(d.user2) }}</td>
+      <td class="muted">{{ ((now - d.started_at).total_seconds() // 60)|int }} мин назад</td>
+      <td>{{ d.messages_count }}</td>
+      <td><a class="btn sm primary" href="/dialogs/{{ d.id }}">👁 Смотреть</a></td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="empty">Сейчас никто не общается</td></tr>{% endfor %}
+  </table></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card">
+    <h2>👥 Комнаты с людьми</h2>
+    <table>
+      {% for r, n in room_rows %}
+      <tr><td><a href="/rooms/{{ r.id }}">{{ r.emoji }} {{ r.title }}</a></td><td><b>{{ n }}</b> / {{ r.max_members }}</td></tr>
+      {% else %}<tr><td class="empty">Пусто</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>🔎 Очередь поиска</h2>
+    <table>
+      {% for u in searching %}
+      <tr><td>{{ user_chip(u) }}</td><td class="muted">{{ ((now - u.search_since).total_seconds())|int if u.search_since else 0 }} с</td>
+      <td class="muted small">{% if u.is_vip and u.pref_gender %}ищет {{ gender_label(u.pref_gender, True) }}{% endif %}</td></tr>
+      {% else %}<tr><td class="empty">Очередь пуста</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

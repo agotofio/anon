@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, pager, type_icon %}
+{% block title %}Сообщения{% endblock %}
+{% block content %}
+<h1>🔎 Все сообщения <span class="badge">{{ total }}</span></h1>
+<form class="row" method="get" style="margin-bottom:14px">
+  <input name="q" value="{{ q }}" placeholder="Поиск по тексту и подписям" style="flex:1;min-width:200px">
+  <select name="type">
+    <option value="">Все типы</option>
+    {% for t, n in types.items() %}<option value="{{ t }}" {{ 'selected' if t == type }}>{{ type_icon(t) }} {{ t }} ({{ n }})</option>{% endfor %}
+  </select>
+  <button class="btn primary">Искать</button>
+</form>
+<div class="card table-wrap">
+  <table>
+    <tr><th>#</th><th>Время</th><th>Отправитель</th><th>Где</th><th>Тип</th><th>Текст</th></tr>
+    {% for m in messages %}
+    <tr>
+      <td class="muted">{{ m.id }}</td>
+      <td class="muted small">{{ fmt_dt(m.created_at) }}</td>
+      <td>{{ user_chip(m.sender) }}</td>
+      <td>{% if m.dialog_id %}<a href="/dialogs/{{ m.dialog_id }}#m{{ m.id }}">💬 #{{ m.dialog_id }}</a>{% elif m.room_id %}<a href="/rooms/{{ m.room_id }}#m{{ m.id }}">👥 #{{ m.room_id }}</a>{% endif %}</td>
+      <td>{{ type_icon(m.content_type) }}{% if m.file_id %} <a href="/file/{{ m.id }}" target="_blank" class="small">файл</a>{% endif %}</td>
+      <td class="wrap" style="max-width:520px">{{ (m.text or '')[:300] }}{% if m.edited %} <span class="badge">✏️</span>{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="6" class="empty">Ничего не найдено</td></tr>{% endfor %}
+  </table>
+</div>
+{{ pager(page, last, '/messages?q=' ~ q|urlencode ~ '&type=' ~ type ~ '&') }}
+{% endblock %}

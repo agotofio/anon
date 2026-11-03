@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вход · AnonChat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="card login" method="post" action="/login">
+    <div class="brand" style="justify-content:center;font-size:24px">🎭 <span>AnonChat</span></div>
+    <p class="muted" style="text-align:center;margin-top:-8px">Панель администратора</p>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <input name="login" placeholder="Логин" autocomplete="username" required autofocus>
+    <input name="password" type="password" placeholder="Пароль" autocomplete="current-password" required>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn primary" type="submit">Войти</button>
+  </form>
+</div>
+</body>
+</html>

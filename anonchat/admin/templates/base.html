@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Админка{% endblock %} · AnonChat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎭</text></svg>">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="topbar-mobile"><button class="btn sm" data-menu>☰</button><b>🎭 AnonChat</b></div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">🎭 <span>AnonChat</span></div>
+    <nav class="nav">
+      <a href="/" class="{{ 'active' if active == 'dashboard' }}">📊 Дашборд</a>
+      <a href="/live" class="{{ 'active' if active == 'live' }}"><span class="live-dot"></span> Онлайн</a>
+      <div class="sep"></div>
+      <a href="/dialogs" class="{{ 'active' if active == 'dialogs' }}">💬 Диалоги 1 на 1</a>
+      <a href="/rooms" class="{{ 'active' if active == 'rooms' }}">👥 Комнаты</a>
+      <a href="/messages" class="{{ 'active' if active == 'messages' }}">🔎 Все сообщения</a>
+      <a href="/gallery" class="{{ 'active' if active == 'gallery' }}">🖼 Медиа</a>
+      <div class="sep"></div>
+      <a href="/users" class="{{ 'active' if active in ('users', 'user') }}">🧑 Пользователи</a>
+      <a href="/reports" class="{{ 'active' if active == 'reports' }}">🚩 Жалобы</a>
+      <a href="/payments" class="{{ 'active' if active == 'payments' }}">⭐ Платежи</a>
+      <a href="/broadcast" class="{{ 'active' if active == 'broadcast' }}">📢 Рассылка</a>
+      <div class="sep"></div>
+      <a href="/logout">🚪 Выйти</a>
+    </nav>
+  </aside>
+  <main class="main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<div id="lightbox"><img alt=""></div>
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

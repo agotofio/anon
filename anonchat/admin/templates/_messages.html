@@ -1,0 +1,24 @@
+{% from "_macros.html" import media %}
+{% set ns = namespace(day=None) %}
+{% for m in messages %}
+  {% set day = m.created_at.strftime('%d.%m.%Y') %}
+  {% if full is defined and full and day != ns.day %}<div class="daysep">{{ day }}</div>{% set ns.day = day %}{% endif %}
+  <div class="msg {{ 'l' if kind == 'room' or m.sender_id == left_id else 'r' }}" data-id="{{ m.id }}" id="m{{ m.id }}">
+    {% if kind == 'room' %}
+      <div class="nick" style="color: {{ m.sender_id|nick_color }}">{{ m.sender_nick or 'аноним' }} · <a href="/users/{{ m.sender_id }}" class="small">{{ m.sender.display_name }}</a></div>
+    {% endif %}
+    {% if m.reply_to_id %}<a class="reply" href="#m{{ m.reply_to_id }}">↩️ ответ на сообщение #{{ m.reply_to_id }}</a>{% endif %}
+    {% if m.file_id %}
+      <div class="bubble media">{{ media(m) }}</div>
+      {% if m.text and m.content_type != 'sticker' %}<div class="bubble">{{ m.text }}</div>{% endif %}
+    {% else %}
+      <div class="bubble">{{ m.text or ('[' ~ m.content_type ~ ']') }}</div>
+    {% endif %}
+    <div class="meta">
+      {{ m.created_at.strftime('%H:%M:%S') }}
+      {% if m.edited %}<span title="Было: {{ m.original_text or '' }}">✏️ изменено</span>{% endif %}
+      {% if not m.delivered %}<span class="undelivered">⚠ не доставлено</span>{% endif %}
+      {% if kind == 'dialog' %}<a href="/users/{{ m.sender_id }}">{{ m.sender.display_name }}</a>{% endif %}
+    </div>
+  </div>
+{% endfor %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, pager %}
+{% block title %}Платежи{% endblock %}
+{% block content %}
+<h1>⭐ Платежи</h1>
+<div class="grid g4 stats">
+  <div class="card stat"><div class="label">Всего звёзд</div><div class="value">{{ d.stars_total }}</div><div class="sub">≈ ${{ '%.0f'|format(d.stars_total * 0.013) }} к выводу (курс Fragment ~$0.013/⭐)</div></div>
+  <div class="card stat"><div class="label">За 30 дней</div><div class="value">{{ d.stars_month }}</div></div>
+  <div class="card stat"><div class="label">Сегодня</div><div class="value">{{ d.stars_today }}</div></div>
+  <div class="card stat"><div class="label">Оплат</div><div class="value">{{ d.payments_total }}</div><div class="sub">VIP сейчас: {{ d.vip_now }}</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card">
+    <h2>По тарифам</h2>
+    <table>
+      <tr><th>Тариф</th><th>Покупок</th><th>Звёзд</th></tr>
+      {% for code, n, sum in by_product %}
+      <tr><td>{{ PRODUCTS[code].emoji ~ ' ' ~ PRODUCTS[code].title if code in PRODUCTS else ('💝 Донат' if code.startswith('donate') else code) }}{% if code.startswith('donate') %} {{ code[7:] }}⭐{% endif %}</td><td>{{ n }}</td><td><b>{{ sum }}</b></td></tr>
+      {% else %}<tr><td class="muted">Нет данных</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Топ поддержавших</h2>
+    <table>
+      {% for u in top %}<tr><td>{{ user_chip(u) }}</td><td><b>{{ u.stars_spent }} ⭐</b></td></tr>
+      {% else %}<tr><td class="muted">Пока никого</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="card mt table-wrap">
+  <h2>История</h2>
+  <table>
+    <tr><th>#</th><th>Пользователь</th><th>Тариф</th><th>Звёзды</th><th>Дней VIP</th><th>Дата</th><th>Charge ID</th><th></th></tr>
+    {% for p in payments %}
+    <tr>
+      <td>{{ p.id }}</td><td>{{ user_chip(p.user) }}</td><td>{{ p.product }}</td><td><b>{{ p.stars }} ⭐</b></td>
+      <td>{{ '∞' if p.vip_days == -1 else p.vip_days or '—' }}</td>
+      <td class="muted small">{{ fmt_dt(p.created_at) }}</td>
+      <td class="small muted"><code>{{ p.charge_id[:18] }}…</code></td>
+      <td>{% if p.refunded %}<span class="badge b-bad">возвращён</span>{% else %}
+        <form method="post" action="/payments/{{ p.id }}/refund" data-confirm="Вернуть {{ p.stars }} ⭐ и списать VIP?"><button class="btn sm danger">↩ Возврат</button></form>{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">Платежей пока нет</td></tr>{% endfor %}
+  </table>
+</div>
+{{ pager(page, last, '/payments?') }}
+{% endblock %}

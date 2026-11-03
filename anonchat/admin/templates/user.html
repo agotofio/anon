@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, media, state_badge, type_icon %}
+{% block title %}{{ u.display_name }}{% endblock %}
+{% block content %}
+<h1>{{ user_chip(u, link=False) }} {{ state_badge(u) }}</h1>
+
+<div class="grid g3">
+  <div class="card">
+    <h2>Профиль</h2>
+    <div class="kv">
+      <div>Telegram ID</div><div><code>{{ u.id }}</code> <a href="tg://user?id={{ u.id }}" class="small">открыть</a></div>
+      <div>Username</div><div>{% if u.username %}<a href="https://t.me/{{ u.username }}" target="_blank" rel="noopener">@{{ u.username }}</a>{% else %}—{% endif %}</div>
+      <div>Имя</div><div>{{ u.first_name or '—' }}</div>
+      <div>Язык</div><div>{{ u.language or '—' }}</div>
+      <div>Пол / возраст</div><div>{{ gender_label(u.gender) }}{% if u.age %}, {{ u.age }}{% endif %}</div>
+      <div>Рейтинг</div><div>{{ rating_text(u) }}</div>
+      <div>Регистрация</div><div>{{ fmt_dt(u.created_at) }}</div>
+      <div>Активность</div><div>{{ fmt_dt(u.last_active) }}</div>
+      <div>Пригласил</div><div>{% if referrer %}{{ user_chip(referrer) }}{% else %}—{% endif %}</div>
+      <div>Приглашено</div><div>{{ u.referrals_count }}</div>
+      <div>Бот заблокирован</div><div>{{ '🔴 да' if u.bot_blocked else 'нет' }}</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Статистика и VIP</h2>
+    <div class="kv">
+      <div>Диалогов</div><div>{{ u.dialogs_count }}</div>
+      <div>Сообщений</div><div>{{ u.messages_count }}</div>
+      <div>VIP</div><div>{{ vip_status_text(u) }}</div>
+      <div>Потрачено</div><div>{{ u.stars_spent }} ⭐</div>
+      <div>Ищет</div><div>{{ gender_label(u.pref_gender) if u.pref_gender else 'всех' }}{% if u.pref_age_min or u.pref_age_max %}, {{ u.pref_age_min or '…' }}–{{ u.pref_age_max or '…' }}{% endif %}</div>
+      <div>Жалоб на него</div><div>{{ reports_on|length }}</div>
+      <div>Его жалоб</div><div>{{ reports_by|length }}</div>
+    </div>
+    <form method="post" action="/users/{{ u.id }}/vip" class="inline mt">
+      <select name="days">
+        <option value="1">+1 день</option><option value="7">+7 дней</option><option value="30" selected>+30 дней</option>
+        <option value="90">+90 дней</option><option value="-1">навсегда</option><option value="0">снять VIP</option>
+      </select>
+      <button class="btn sm">👑 Применить</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Модерация</h2>
+    {% if u.is_banned %}
+      <p><span class="badge b-bad">🚫 Забанен</span> {{ u.ban_reason }}<br><span class="small muted">до: {{ fmt_dt(u.ban_until) if u.ban_until else 'навсегда' }}</span></p>
+      <form method="post" action="/users/{{ u.id }}/unban"><button class="btn sm">✅ Разбанить</button></form>
+    {% else %}
+      <form method="post" action="/users/{{ u.id }}/ban" class="grid" style="gap:8px" data-confirm="Забанить пользователя?">
+        <input name="reason" placeholder="Причина" value="Нарушение правил">
+        <select name="hours"><option value="1">1 час</option><option value="24">24 часа</option><option value="168">7 дней</option><option value="720">30 дней</option><option value="0" selected>навсегда</option></select>
+        <button class="btn danger sm">🚫 Забанить</button>
+      </form>
+    {% endif %}
+    <form method="post" action="/users/{{ u.id }}/message" class="grid mt" style="gap:8px">
+      <textarea name="text" placeholder="Сообщение от администрации (HTML)" style="min-height:70px" required></textarea>
+      <button class="btn sm">✉️ Отправить в бот</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card table-wrap">
+    <h2>💬 Диалоги ({{ dialogs|length }})</h2>
+    <table>
+      {% for d in dialogs %}
+      {% set other = d.user2 if d.user1_id == u.id else d.user1 %}
+      <tr><td><a href="/dialogs/{{ d.id }}">#{{ d.id }}</a></td><td>{{ user_chip(other) }}</td><td>{{ d.messages_count }} сообщ.</td><td class="muted small">{{ fmt_dt(d.started_at) }}</td>
+      <td>{% if d.is_active %}<span class="badge b-ok">идёт</span>{% endif %}</td></tr>
+      {% else %}<tr><td class="muted">Нет диалогов</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card table-wrap">
+    <h2>👥 Комнаты</h2>
+    <table>
+      {% for m, r in memberships %}
+      <tr><td><a href="/rooms/{{ r.id }}">{{ r.emoji }} {{ r.title }}</a></td><td>{{ m.nickname }}</td><td class="muted small">{{ fmt_dt(m.joined_at) }}</td>
+      <td>{% if not m.left_at %}<span class="badge b-ok">сейчас</span>{% elif m.kicked %}<span class="badge b-bad">кикнут</span>{% endif %}</td></tr>
+      {% else %}<tr><td class="muted">Не заходил</td></tr>{% endfor %}
+    </table>
+    {% if payments %}
+    <h2 class="mt">⭐ Платежи</h2>
+    <table>
+      {% for p in payments %}<tr><td>{{ p.product }}</td><td><b>{{ p.stars }} ⭐</b></td><td class="muted small">{{ fmt_dt(p.created_at) }}</td><td>{% if p.refunded %}<span class="badge b-bad">возврат</span>{% endif %}</td></tr>{% endfor %}
+    </table>
+    {% endif %}
+  </div>
+</div>
+
+{% if reports_on %}
+<div class="card mt table-wrap">
+  <h2>🚩 Жалобы на пользователя</h2>
+  <table>
+    {% for r in reports_on %}
+    <tr><td>#{{ r.id }}</td><td>{{ r.reason }}</td><td>от {{ user_chip(r.reporter) }}</td>
+    <td>{% if r.dialog_id %}<a href="/dialogs/{{ r.dialog_id }}">диалог #{{ r.dialog_id }}</a>{% elif r.room_id %}<a href="/rooms/{{ r.room_id }}">комната #{{ r.room_id }}</a>{% endif %}</td>
+    <td><span class="badge">{{ r.status.value }}</span></td><td class="muted small">{{ fmt_dt(r.created_at) }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+<div class="card mt">
+  <h2>🖼 Медиа пользователя <span class="small muted">(последние {{ user_media|length }})</span></h2>
+  <div class="gallery">
+    {% for m in user_media %}
+    <div class="tile"><div class="thumb">{{ media(m, thumb=True) }}</div>
+      <div class="cap"><span>{{ type_icon(m.content_type) }} {{ fmt_dt(m.created_at) }}</span>
+      {% if m.dialog_id %}<a href="/dialogs/{{ m.dialog_id }}#m{{ m.id }}">чат</a>{% elif m.room_id %}<a href="/rooms/{{ m.room_id }}#m{{ m.id }}">чат</a>{% endif %}</div></div>
+    {% else %}<p class="muted">Нет медиа</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

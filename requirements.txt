@@ -1,0 +1,11 @@
+aiogram==3.31.0
+SQLAlchemy[asyncio]==2.1.7
+aiosqlite==0.22.1
+fastapi==0.162.0
+uvicorn==0.54.0
+Jinja2==3.1.6
+python-multipart>=0.0.9
+itsdangerous==2.2.0
+pydantic-settings==2.16.2
+# для PostgreSQL раскомментируйте:
+# asyncpg>=0.30

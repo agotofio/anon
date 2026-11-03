@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip %}
+{% block title %}Дашборд{% endblock %}
+{% block content %}
+<h1>📊 Дашборд <span class="badge b-ok"><span class="live-dot"></span>&nbsp;онлайн {{ d.online }}</span></h1>
+
+<div class="grid g4 stats">
+  <div class="card stat"><span class="ico">🧑</span><div class="label">Пользователи</div><div class="value">{{ d.users_total }}</div><div class="sub">+{{ d.users_today }} сегодня · +{{ d.users_week }} за неделю</div></div>
+  <div class="card stat"><span class="ico">📈</span><div class="label">DAU / WAU / MAU</div><div class="value">{{ d.dau }}</div><div class="sub">{{ d.wau }} неделя · {{ d.mau }} месяц</div></div>
+  <div class="card stat"><span class="ico">🟢</span><div class="label">Сейчас</div><div class="value">{{ d.online }}</div><div class="sub">🔎 {{ d.searching }} ищут · 💬 {{ d.chatting }} в диалогах · 👥 {{ d.in_rooms }} в комнатах</div></div>
+  <div class="card stat"><span class="ico">⭐</span><div class="label">Доход (Stars)</div><div class="value">{{ d.stars_month }}</div><div class="sub">за 30 дней · {{ d.stars_today }} сегодня · {{ d.stars_total }} всего</div></div>
+  <div class="card stat"><span class="ico">💬</span><div class="label">Диалоги</div><div class="value">{{ d.dialogs_total }}</div><div class="sub">{{ d.active_dialogs }} активных · {{ d.dialogs_today }} сегодня</div></div>
+  <div class="card stat"><span class="ico">✉️</span><div class="label">Сообщения</div><div class="value">{{ d.messages_total }}</div><div class="sub">{{ d.messages_today }} сегодня · ~{{ d.avg_dialog_messages }} на диалог</div></div>
+  <div class="card stat"><span class="ico">👑</span><div class="label">VIP</div><div class="value">{{ d.vip_now }}</div><div class="sub">{{ d.payments_total }} оплат · {% if d.users_total %}{{ '%.1f'|format(100 * d.vip_now / d.users_total) }}{% else %}0{% endif %}% конверсия</div></div>
+  <div class="card stat"><span class="ico">🚩</span><div class="label">Модерация</div><div class="value">{{ d.reports_open }}</div><div class="sub">открытых жалоб · {{ d.banned }} в бане</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card"><h2>Регистрации и диалоги · 30 дней</h2><div class="chart-box"><canvas id="cUsers"></canvas></div></div>
+  <div class="card"><h2>Сообщения · 30 дней</h2><div class="chart-box"><canvas id="cMsgs"></canvas></div></div>
+  <div class="card"><h2>Доход в звёздах · 30 дней</h2><div class="chart-box"><canvas id="cStars"></canvas></div></div>
+  <div class="card"><h2>Активность по часам (UTC, 7 дней)</h2><div class="chart-box"><canvas id="cHours"></canvas></div></div>
+</div>
+
+<div class="grid g3 mt">
+  <div class="card">
+    <h2>Типы контента</h2>
+    <div class="chart-box" style="height:220px"><canvas id="cTypes"></canvas></div>
+    <p class="small muted">Пол: 👨 {{ d.male }} · 👩 {{ d.female }} · 🤷 {{ d.users_total - d.male - d.female }}</p>
+  </div>
+  <div class="card">
+    <h2>Топ комнат</h2>
+    <table>
+      {% for r in top_rooms %}
+      <tr><td><a href="/rooms/{{ r.id }}">{{ r.emoji }} {{ r.title }}</a></td><td class="muted">{{ r.messages_count }} сообщ.</td></tr>
+      {% else %}<tr><td class="muted">Пока пусто</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Последние оплаты</h2>
+    <table>
+      {% for p in recent_payments %}
+      <tr><td>{{ user_chip(p.user) }}</td><td><b>{{ p.stars }} ⭐</b></td></tr>
+      {% else %}<tr><td class="muted">Оплат ещё не было</td></tr>{% endfor %}
+    </table>
+    {% if recent_reports %}
+    <h2 class="mt">Свежие жалобы</h2>
+    <table>
+      {% for r in recent_reports %}
+      <tr><td>{{ user_chip(r.reported) }}</td><td class="muted">{{ r.reason }}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/chart.umd.js"></script>
+<script>
+const S = {{ series|tojson }};
+const H = {{ hourly|tojson }};
+const T = {{ types|tojson }};
+const css = getComputedStyle(document.documentElement);
+const muted = css.getPropertyValue('--muted').trim(), line = css.getPropertyValue('--line').trim();
+Chart.defaults.color = muted; Chart.defaults.borderColor = line; Chart.defaults.font.family = 'Inter, system-ui';
+const opts = {responsive: true, maintainAspectRatio: false, plugins: {legend: {labels: {boxWidth: 12}}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}};
+const ds = (label, data, color, fill = true) => ({label, data, borderColor: color, backgroundColor: color + '33', fill, cubicInterpolationMode: 'monotone', pointRadius: 0, borderWidth: 2});
+new Chart(cUsers, {type: 'line', data: {labels: S.labels, datasets: [ds('Новые пользователи', S.users, '#7c5cff'), ds('Диалоги', S.dialogs, '#22d3ee', false)]}, options: opts});
+new Chart(cMsgs, {type: 'bar', data: {labels: S.labels, datasets: [{label: 'Сообщения', data: S.messages, backgroundColor: '#7c5cffaa', borderRadius: 6}]}, options: opts});
+new Chart(cStars, {type: 'bar', data: {labels: S.labels, datasets: [{label: '⭐ Stars', data: S.stars, backgroundColor: '#fbbf24cc', borderRadius: 6}]}, options: opts});
+new Chart(cHours, {type: 'bar', data: {labels: [...Array(24).keys()].map(h => h + ':00'), datasets: [{label: 'Сообщения', data: H, backgroundColor: '#22d3eeaa', borderRadius: 6}]}, options: opts});
+new Chart(cTypes, {type: 'doughnut', data: {labels: Object.keys(T), datasets: [{data: Object.values(T), backgroundColor: ['#7c5cff','#22d3ee','#fbbf24','#22c55e','#ef4444','#f472b6','#a3e635','#fb923c','#94a3b8','#38bdf8'], borderWidth: 0}]}, options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'right', labels: {boxWidth: 10}}}}});
+</script>
+{% endblock %}

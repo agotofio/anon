@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, pager %}
+{% block title %}Жалобы{% endblock %}
+{% block content %}
+<h1>🚩 Жалобы <span class="badge">{{ total }}</span></h1>
+<div class="tabs">
+  {% for k, label in [('open','Открытые'),('resolved','Решённые'),('rejected','Отклонённые'),('all','Все')] %}
+  <a href="/reports?status={{ k }}" class="{{ 'on' if status == k }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="card table-wrap">
+  <table>
+    <tr><th>#</th><th>Нарушитель</th><th>Всего жалоб</th><th>Причина</th><th>Заявитель</th><th>Где</th><th>Когда</th><th>Действия</th></tr>
+    {% for r in reports %}
+    <tr>
+      <td>{{ r.id }}</td>
+      <td>{{ user_chip(r.reported) }}</td>
+      <td>{% set c = counts.get(r.reported_id, 0) %}<span class="badge {{ 'b-bad' if c >= 3 else 'b-warn' if c > 1 else '' }}">{{ c }}</span></td>
+      <td>{{ reasons.get(r.reason, r.reason) }}</td>
+      <td>{{ user_chip(r.reporter) }}</td>
+      <td>{% if r.dialog_id %}<a href="/dialogs/{{ r.dialog_id }}">💬 диалог #{{ r.dialog_id }}</a>{% elif r.room_id %}<a href="/rooms/{{ r.room_id }}">👥 комната #{{ r.room_id }}</a>{% endif %}</td>
+      <td class="muted small">{{ fmt_dt(r.created_at) }}</td>
+      <td>
+        {% if r.status.value == 'open' %}
+        <form class="inline" method="post" action="/reports/{{ r.id }}/ban" data-confirm="Забанить нарушителя?">
+          <select name="hours"><option value="24">24ч</option><option value="168">7д</option><option value="0">навсегда</option></select>
+          <button class="btn danger sm">🚫 Бан</button>
+        </form>
+        <form class="inline" method="post" action="/reports/{{ r.id }}/resolve"><button class="btn sm">✅ Решено</button></form>
+        <form class="inline" method="post" action="/reports/{{ r.id }}/reject"><button class="btn sm">✖ Отклонить</button></form>
+        {% else %}<span class="badge">{{ r.status.value }}</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">Жалоб нет 🎉</td></tr>{% endfor %}
+  </table>
+</div>
+{{ pager(page, last, '/reports?status=' ~ status ~ '&') }}
+{% endblock %}

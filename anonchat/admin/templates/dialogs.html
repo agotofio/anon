@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import user_chip, pager %}
+{% block title %}Диалоги{% endblock %}
+{% block content %}
+<h1>💬 Диалоги 1 на 1 <span class="badge">{{ total }}</span></h1>
+<div class="row" style="margin-bottom:14px">
+  <div class="tabs" style="margin:0">
+    {% for k, label in [('all','Все'),('active','🟢 Активные'),('ended','Завершённые')] %}
+    <a href="/dialogs?status={{ k }}{% if user %}&user={{ user }}{% endif %}" class="{{ 'on' if status == k }}">{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="spacer"></div>
+  <form class="inline" method="get">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input name="user" placeholder="ID пользователя" value="{{ user or '' }}" inputmode="numeric">
+    <button class="btn">Фильтр</button>
+  </form>
+</div>
+<div class="card table-wrap">
+  <table>
+    <tr><th>#</th><th>Собеседник 1</th><th>Собеседник 2</th><th>Начат</th><th>Длительность</th><th>Сообщ.</th><th>Статус</th><th></th></tr>
+    {% for d in dialogs %}
+    <tr>
+      <td>{{ d.id }}</td>
+      <td>{{ user_chip(d.user1) }}</td>
+      <td>{{ user_chip(d.user2) }}</td>
+      <td class="muted">{{ fmt_dt(d.started_at) }}</td>
+      <td class="muted">{% if d.ended_at %}{{ ((d.ended_at - d.started_at).total_seconds() // 60)|int }} мин{% else %}—{% endif %}</td>
+      <td>{{ d.messages_count }}</td>
+      <td>{% if d.is_active %}<span class="badge b-ok">идёт</span>{% else %}<span class="badge">завершён</span>{% endif %}</td>
+      <td><a class="btn sm" href="/dialogs/{{ d.id }}">Открыть</a></td>
+    </tr>
+    {% else %}<tr><td colspan="8" class="empty">Диалогов нет</td></tr>{% endfor %}
+  </table>
+</div>
+{{ pager(page, last, '/dialogs?status=' ~ status ~ ('&user=' ~ user if user else '') ~ '&') }}
+{% endblock %}

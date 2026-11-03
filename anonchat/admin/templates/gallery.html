@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import media, pager, type_icon %}
+{% block title %}Медиа{% endblock %}
+{% block content %}
+<h1>🖼 Медиа <span class="badge">{{ total }}</span></h1>
+<div class="tabs">
+  {% for k, label in [('','Все'),('photo','🖼 Фото'),('video','🎬 Видео и кружки'),('voice','🎤 Голосовые и аудио'),('sticker','🌟 Стикеры'),('document','📄 Файлы')] %}
+  <a href="/gallery?type={{ k }}" class="{{ 'on' if type == k }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="gallery">
+  {% for m in items %}
+  <div class="tile">
+    <div class="thumb">{{ media(m, thumb=True) }}</div>
+    <div class="cap">
+      <span>{{ type_icon(m.content_type) }} <a href="/users/{{ m.sender_id }}">{{ m.sender.display_name }}</a></span>
+      {% if m.dialog_id %}<a href="/dialogs/{{ m.dialog_id }}#m{{ m.id }}">💬 чат</a>{% elif m.room_id %}<a href="/rooms/{{ m.room_id }}#m{{ m.id }}">👥 чат</a>{% endif %}
+    </div>
+    <div class="cap" style="padding-top:0"><span>{{ fmt_dt(m.created_at) }}</span><a href="/file/{{ m.id }}?download=1">⬇</a></div>
+  </div>
+  {% else %}<p class="muted">Медиа пока нет</p>{% endfor %}
+</div>
+{{ pager(page, last, '/gallery?type=' ~ type ~ '&') }}
+{% endblock %}
